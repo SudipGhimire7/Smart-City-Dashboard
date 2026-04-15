@@ -1,8 +1,6 @@
 
   # Futuristic Smart City Dashboard
-
-  This is a code bundle for Futuristic Smart City Dashboard. The original project is available at https://www.figma.com/design/Zy5myMXPOSmzQZDgoDF20A/Futuristic-Smart-City-Dashboard.
-
+“Real-time smart city dashboard for Kathmandu integrating live environmental, traffic, and news data with predictive insights and interactive visualization.”
   ## Running the code
 
   Run `npm i` to install the dependencies.
