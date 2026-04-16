@@ -45,42 +45,40 @@ export function AlertsPanel() {
     switch (severity) {
       case "high":
         return {
-          color: "border-red-500/50 bg-red-500/10",
-          glow: "shadow-[0_0_20px_rgba(239,68,68,0.3)]",
+          color: "border-rose-100 bg-rose-50",
           icon: AlertTriangle,
-          iconColor: "text-red-400",
+          iconColor: "text-rose-600",
+          titleColor: "text-rose-900",
+          textColor: "text-rose-700"
         };
       case "medium":
         return {
-          color: "border-yellow-500/50 bg-yellow-500/10",
-          glow: "shadow-[0_0_20px_rgba(234,179,8,0.3)]",
+          color: "border-amber-100 bg-amber-50",
           icon: AlertCircle,
-          iconColor: "text-yellow-400",
+          iconColor: "text-amber-600",
+          titleColor: "text-amber-900",
+          textColor: "text-amber-700"
         };
       default:
         return {
-          color: "border-green-500/50 bg-green-500/10",
-          glow: "shadow-[0_0_20px_rgba(34,197,94,0.3)]",
+          color: "border-emerald-100 bg-emerald-50",
           icon: CheckCircle,
-          iconColor: "text-green-400",
+          iconColor: "text-emerald-600",
+          titleColor: "text-emerald-900",
+          textColor: "text-emerald-700"
         };
     }
   };
 
   return (
-    <div className="flex flex-col gap-6 h-full">
+    <div className="flex flex-col gap-6 h-full bg-card">
       {/* Active Alerts */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 p-4">
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <AlertTriangle className="w-5 h-5 text-red-500" />
-            <motion.div 
-              className="absolute inset-0 bg-red-500 rounded-full blur-md opacity-50"
-              animate={{ scale: [1, 1.5, 1], opacity: [0.2, 0.5, 0.2] }}
-              transition={{ duration: 2, repeat: Infinity }}
-            />
+          <div className="w-8 h-8 rounded-lg bg-rose-50 flex items-center justify-center">
+            <AlertTriangle className="w-4 h-4 text-rose-600" />
           </div>
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider">Active Alerts</h2>
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">Active Alerts</h2>
         </div>
         
         <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
@@ -91,16 +89,16 @@ export function AlertsPanel() {
               return (
                 <motion.div
                   key={alert.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
-                  className={`p-3 rounded-xl border ${config.color} relative group cursor-pointer transition-all hover:bg-white/5`}
+                  className={`p-3 rounded-xl border ${config.color} shadow-sm group cursor-pointer transition-all hover:shadow-md`}
                 >
                   <div className="flex gap-3">
                     <Icon className={`w-4 h-4 mt-0.5 ${config.iconColor}`} />
                     <div>
-                      <h3 className="text-xs font-bold text-white">{alert.title}</h3>
-                      <p className="text-[10px] text-slate-400 mt-0.5">{alert.message}</p>
+                      <h3 className={`text-xs font-bold ${config.titleColor}`}>{alert.title}</h3>
+                      <p className={`text-[10px] ${config.textColor} mt-0.5 opacity-80`}>{alert.message}</p>
                     </div>
                   </div>
                 </motion.div>
@@ -111,10 +109,12 @@ export function AlertsPanel() {
       </div>
 
       {/* AI Insights */}
-      <div className="flex flex-col gap-4 border-t border-white/5 pt-6 mt-auto">
+      <div className="flex flex-col gap-4 p-4 border-t border-border bg-slate-50/50 mt-auto">
         <div className="flex items-center gap-3">
-          <Brain className="w-5 h-5 text-purple-400" />
-          <h2 className="text-sm font-bold text-white uppercase tracking-wider">AI Insights</h2>
+          <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+            <Brain className="w-4 h-4 text-indigo-600" />
+          </div>
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">Intelligence Insights</h2>
         </div>
         <div className="space-y-2">
           {aiInsights.map((insight, index) => {
@@ -125,10 +125,10 @@ export function AlertsPanel() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: index * 0.1 }}
-                className="flex items-center gap-3 p-2 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 transition-colors cursor-default"
+                className="flex items-center gap-3 p-2.5 rounded-lg bg-white border border-border shadow-sm hover:border-indigo-200 transition-all cursor-default"
               >
-                <Icon className="w-3.5 h-3.5 text-purple-400" />
-                <span className="text-[11px] text-slate-300">{insight.text}</span>
+                <Icon className="w-3.5 h-3.5 text-indigo-500" />
+                <span className="text-[11px] font-medium text-slate-600">{insight.text}</span>
               </motion.div>
             );
           })}

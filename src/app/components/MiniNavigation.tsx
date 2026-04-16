@@ -15,40 +15,30 @@ export function MiniNavigation() {
   ];
 
   return (
-    <div className="flex flex-col h-full bg-transparent">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="flex flex-col h-full bg-card">
+      <div className="flex items-center gap-3 p-4 border-b border-border bg-slate-50/50">
         <div className="relative">
-          <Navigation2 className="w-5 h-5 text-cyan-400" />
-          <motion.div 
-            className="absolute inset-0 bg-cyan-400 rounded-full blur-md opacity-50"
-            animate={{ scale: [1, 1.5, 1], opacity: [0.2, 0.5, 0.2] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          />
+          <Navigation2 className="w-5 h-5 text-blue-600" />
         </div>
-        <h2 className="text-sm font-bold text-white uppercase tracking-wider">Quick Navigation</h2>
+        <h2 className="text-sm font-semibold text-foreground">Quick Navigation</h2>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 overflow-y-auto pr-2 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
         {locations.map((location, index) => (
-          <motion.button
+          <button
             key={index}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.1 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="flex items-center gap-3 p-4 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 hover:border-cyan-500/30 transition-all group text-left"
+            className="w-full flex items-center gap-3 p-3 rounded-xl border border-border bg-white hover:bg-slate-50 hover:border-blue-200 transition-all group text-left shadow-sm"
           >
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-cyan-500/10 text-cyan-400 border border-cyan-500/20`}>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-blue-50 text-blue-600 border border-blue-100 group-hover:bg-blue-600 group-hover:text-white transition-colors`}>
               <MapPin className="w-4 h-4" />
             </div>
             <div className="flex-1">
-              <span className="text-xs font-semibold text-slate-200 group-hover:text-cyan-400 transition-colors">
+              <span className="text-xs font-semibold text-slate-700 group-hover:text-blue-600 transition-colors">
                 {location.name}
               </span>
-              <p className="text-[10px] text-slate-500 mt-0.5">District Sector A-4</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">District Sector A-4</p>
             </div>
-          </motion.button>
+          </button>
         ))}
       </div>
     </div>

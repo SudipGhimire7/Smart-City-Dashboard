@@ -17,81 +17,62 @@ export function StatusBar({ temperature, aqi, trafficLevel }: StatusBarProps) {
   }, []);
 
   const getAqiColor = (aqi: number) => {
-    if (aqi <= 50) return "from-green-500 to-emerald-500";
-    if (aqi <= 100) return "from-yellow-500 to-amber-500";
-    if (aqi <= 150) return "from-orange-500 to-red-500";
-    return "from-red-500 to-rose-700";
-  };
-
-  const getAqiGlow = (aqi: number) => {
-    if (aqi <= 50) return "shadow-[0_0_20px_rgba(34,197,94,0.5)]";
-    if (aqi <= 100) return "shadow-[0_0_20px_rgba(234,179,8,0.5)]";
-    if (aqi <= 150) return "shadow-[0_0_20px_rgba(249,115,22,0.5)]";
-    return "shadow-[0_0_20px_rgba(239,68,68,0.5)]";
+    if (aqi <= 50) return "text-emerald-600 bg-emerald-50 border-emerald-100";
+    if (aqi <= 100) return "text-amber-600 bg-amber-50 border-amber-100";
+    if (aqi <= 150) return "text-orange-600 bg-orange-50 border-orange-100";
+    return "text-rose-600 bg-rose-50 border-rose-100";
   };
 
   return (
     <div className="w-full">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Temperature */}
-        <motion.div 
-          whileHover={{ scale: 1.02 }}
-          className="glass-panel p-4 flex items-center gap-4 border border-white/5"
-        >
-          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400 border border-cyan-500/20">
+        <div className="bg-card border border-border p-4 rounded-xl flex items-center gap-4 shadow-sm">
+          <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600">
             <Thermometer className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Temp</div>
-            <div className="text-xl font-bold text-white font-mono">{temperature}°C</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Temperature</div>
+            <div className="text-lg font-bold text-foreground">{temperature}°C</div>
           </div>
-        </motion.div>
+        </div>
 
         {/* AQI */}
-        <motion.div 
-          whileHover={{ scale: 1.02 }}
-          className="glass-panel p-4 flex items-center gap-4 border border-white/5"
-        >
-          <div className={`w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20`}>
-            <Wind className="w-5 h-5 text-cyan-400" />
+        <div className="bg-card border border-border p-4 rounded-xl flex items-center gap-4 shadow-sm">
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${getAqiColor(aqi)}`}>
+            <Wind className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">AQI</div>
-            <div className={`text-xl font-bold font-mono bg-gradient-to-r ${getAqiColor(aqi)} bg-clip-text text-transparent`}>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Air Quality</div>
+            <div className={`text-lg font-bold ${getAqiColor(aqi).split(' ')[0]}`}>
               {aqi}
             </div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Traffic */}
-        <motion.div 
-          whileHover={{ scale: 1.02 }}
-          className="glass-panel p-4 flex items-center gap-4 border border-white/5"
-        >
-          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400 border border-cyan-500/20">
+        <div className="bg-card border border-border p-4 rounded-xl flex items-center gap-4 shadow-sm">
+          <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
             <Car className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Traffic</div>
-            <div className="text-xl font-bold text-white font-mono">{trafficLevel}</div>
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Traffic</div>
+            <div className="text-lg font-bold text-foreground">{trafficLevel}</div>
           </div>
-        </motion.div>
+        </div>
 
         {/* Time */}
-        <motion.div 
-          whileHover={{ scale: 1.02 }}
-          className="glass-panel p-4 flex items-center gap-4 border border-white/5"
-        >
-          <div className="w-10 h-10 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400 border border-cyan-500/20">
+        <div className="bg-card border border-border p-4 rounded-xl flex items-center gap-4 shadow-sm">
+          <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center text-slate-600">
             <Clock className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Time</div>
-            <div className="text-xl font-bold text-white font-mono">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Time</div>
+            <div className="text-lg font-bold text-foreground">
               {time.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
     </div>
   );

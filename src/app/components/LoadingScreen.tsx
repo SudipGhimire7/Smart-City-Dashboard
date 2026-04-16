@@ -7,16 +7,16 @@ interface LoadingScreenProps {
 
 export function LoadingScreen({ onComplete }: LoadingScreenProps) {
   const [progress, setProgress] = useState(0);
-  const [loadingText, setLoadingText] = useState("INITIALIZING SYSTEM");
+  const [loadingText, setLoadingText] = useState("Readying Systems");
 
   useEffect(() => {
     const texts = [
-      "INITIALIZING SYSTEM",
-      "CONNECTING TO SENSORS",
-      "LOADING CITY DATA",
-      "CALIBRATING ANALYTICS",
-      "ESTABLISHING REAL-TIME FEED",
-      "SYSTEM READY"
+      "Readying Systems",
+      "Optimizing Dashboard",
+      "Syncing City Data",
+      "Calibrating Analytics",
+      "Interface Preparation",
+      "System Ready"
     ];
 
     let currentIndex = 0;
@@ -51,101 +51,56 @@ export function LoadingScreen({ onComplete }: LoadingScreenProps) {
         initial={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.8 }}
-        className="fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center"
+        className="fixed inset-0 z-[100] bg-white flex items-center justify-center p-8"
       >
-        {/* Animated grid background */}
-        <div className="absolute inset-0 opacity-20">
-          <div 
-            className="absolute inset-0" 
-            style={{
-              backgroundImage: `
-                linear-gradient(rgba(6, 182, 212, 0.3) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(6, 182, 212, 0.3) 1px, transparent 1px)
-              `,
-              backgroundSize: '50px 50px',
-            }}
-          />
-        </div>
-
-        <div className="relative z-10 flex flex-col items-center gap-8">
-          {/* Logo/Title */}
+        <div className="relative z-10 flex flex-col items-center gap-12 w-full max-w-sm">
+          {/* Logo/Title Section */}
           <motion.div
-            initial={{ scale: 0.5, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.8, type: "spring" }}
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
             className="text-center"
           >
-            <h1 className="text-6xl font-bold bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent mb-2">
-              KATHMANDU
+            <div className="w-20 h-20 rounded-2xl bg-blue-600 flex items-center justify-center shadow-2xl shadow-blue-200 mx-auto mb-6">
+              <div className="w-10 h-10 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+            </div>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">
+              CityDesk
             </h1>
-            <div className="text-sm text-cyan-300/70 uppercase tracking-[0.5em]">
-              Smart City Command Center
+            <div className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">
+              Central Management Suite
             </div>
           </motion.div>
 
-          {/* Loading Bar */}
-          <div className="w-96 space-y-4">
-            {/* Progress Bar */}
-            <div className="relative h-2 bg-slate-800 rounded-full overflow-hidden">
-              <motion.div
-                className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-500 to-blue-500"
-                style={{ width: `${progress}%` }}
-                transition={{ duration: 0.3 }}
-              />
-              {/* Glow effect */}
-              <motion.div
-                className="absolute inset-y-0 left-0 bg-gradient-to-r from-cyan-400 to-blue-400 blur-md"
-                style={{ width: `${progress}%` }}
-                transition={{ duration: 0.3 }}
-              />
-            </div>
-
-            {/* Loading Text */}
-            <div className="flex items-center justify-between">
-              <motion.div
+          {/* Loading Container */}
+          <div className="w-full space-y-4">
+            {/* Progress Bar Label */}
+            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
+              <motion.span
                 key={loadingText}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-sm text-cyan-300 uppercase tracking-wider font-mono"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
               >
                 {loadingText}
-              </motion.div>
-              <div className="text-sm text-cyan-400 font-mono">
-                {progress}%
-              </div>
+              </motion.span>
+              <span className="text-blue-600">{progress}%</span>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+              <motion.div
+                className="absolute inset-y-0 left-0 bg-blue-600 rounded-full shadow-lg shadow-blue-400/50"
+                style={{ width: `${progress}%` }}
+                transition={{ duration: 0.3 }}
+              />
             </div>
           </div>
 
-          {/* Scanning animation */}
-          <motion.div
-            className="flex gap-1"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-          >
-            {[...Array(5)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="w-1 h-8 bg-cyan-500 rounded-full"
-                animate={{
-                  scaleY: [1, 2, 1],
-                  opacity: [0.3, 1, 0.3],
-                }}
-                transition={{
-                  duration: 1,
-                  repeat: Infinity,
-                  delay: i * 0.1,
-                }}
-              />
-            ))}
-          </motion.div>
+          <p className="text-[10px] text-slate-400 font-medium text-center leading-relaxed">
+            Optimized for enterprise city management. <br />
+            Powered by Kathmandu Analytics.
+          </p>
         </div>
-
-        {/* Corner decorations */}
-        <div className="absolute top-4 left-4 w-20 h-20 border-l-2 border-t-2 border-cyan-500/50"></div>
-        <div className="absolute top-4 right-4 w-20 h-20 border-r-2 border-t-2 border-cyan-500/50"></div>
-        <div className="absolute bottom-4 left-4 w-20 h-20 border-l-2 border-b-2 border-cyan-500/50"></div>
-        <div className="absolute bottom-4 right-4 w-20 h-20 border-r-2 border-b-2 border-cyan-500/50"></div>
       </motion.div>
     </AnimatePresence>
   );

@@ -1,6 +1,21 @@
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { ZoomIn, ZoomOut, Maximize2, Navigation, AlertTriangle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap } from "react-leaflet";
+import L from "leaflet";
+
+// Leaflet marker icons fix for React
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+    iconUrl: icon,
+    shadowUrl: iconShadow,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41]
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
 
 interface MapPanelProps {
   showTraffic: boolean;
@@ -9,385 +24,265 @@ interface MapPanelProps {
   incidents?: { id: string; x: number; y: number; label: string; type: string }[];
 }
 
-export function MapPanel({ showTraffic, showAqi, showWeather, incidents = [] }: MapPanelProps) {
-  const [zoom, setZoom] = useState(12);
-  const [dataPoints, setDataPoints] = useState<{x: number; y: number; value: number}[]>([]);
-
-  // Generate animated data points
+// Controller component to bridge external controls with Leaflet map
+function MapController({ zoom, center }: { zoom: number, center: [number, number] }) {
+  const map = useMap();
+  
   useEffect(() => {
-    const interval = setInterval(() => {
-      setDataPoints(Array.from({ length: 20 }, () => ({
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        value: Math.random()
-      })));
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+    map.setView(center, zoom);
+  }, [zoom, center, map]);
 
-  // Key locations in Kathmandu
-  const markers = [
-    { x: 45, y: 50, label: "Thamel", traffic: "high", aqi: 165 },
-    { x: 55, y: 48, label: "Durbar Square", traffic: "medium", aqi: 142 },
-    { x: 60, y: 55, label: "Patan", traffic: "low", aqi: 95 },
-    { x: 50, y: 40, label: "Ring Road", traffic: "high", aqi: 180 },
-    { x: 40, y: 60, label: "Boudhanath", traffic: "medium", aqi: 120 },
-  ];
+  // Fix for partial loading/grey squares: re-calculate size after initial render
+  useEffect(() => {
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+  }, [map]);
+
+  return null;
+}
+
+export function MapPanel({ showTraffic, showAqi, showWeather, incidents = [] }: MapPanelProps) {
+  const [zoom, setZoom] = useState(13);
+  const [center, setCenter] = useState<[number, number]>([27.7172, 85.3240]); // Kathmandu Center
+
+  // Real-world Landmarks of Kathmandu (Expanded GPS Repository)
+  const landmarks = useMemo(() => [
+    // Heritage & Major Landmarks (Level 1 - Always visible)
+    { position: [27.7042, 85.3072] as [number, number], label: "Basantapur", type: "heritage", traffic: "high", level: 1 },
+    { position: [27.7132, 85.3152] as [number, number], label: "Narayanhiti", type: "palace", traffic: "medium", level: 1 },
+    { position: [27.7149, 85.2903] as [number, number], label: "Swoyambhu", type: "heritage", traffic: "low", level: 1 },
+    { position: [27.7104, 85.3486] as [number, number], label: "Pashupatinath", type: "heritage", traffic: "high", level: 1 },
+    { position: [27.7215, 85.3620] as [number, number], label: "Boudhanath", type: "heritage", traffic: "medium", level: 1 },
+    { position: [27.6727, 85.3252] as [number, number], label: "Patan Durbar Sq", type: "heritage", traffic: "medium", level: 1 },
+    { position: [27.6970, 85.3563] as [number, number], label: "TIA Airport", type: "transport", traffic: "high", level: 1 },
+    { position: [27.6983, 85.3225] as [number, number], label: "Singha Durbar", type: "govt", traffic: "high", level: 1 },
+    { position: [27.7006, 85.3121] as [number, number], label: "Dharahara", type: "heritage", traffic: "medium", level: 1 },
+    
+    // Major Hubs & Junctions (Level 2 - Visible at zoom > 13)
+    { position: [27.7345, 85.3340] as [number, number], label: "Maharajgunj", type: "hub", traffic: "high", level: 2 },
+    { position: [27.6942, 85.2825] as [number, number], label: "Kalanki", type: "hub", traffic: "critical", level: 2 },
+    { position: [27.6762, 85.3496] as [number, number], label: "Koteshwor", type: "hub", traffic: "critical", level: 2 },
+    { position: [27.6830, 85.3040] as [number, number], label: "Balkhu", type: "hub", traffic: "medium", level: 2 },
+    { position: [27.7160, 85.3160] as [number, number], label: "Lainchaur", type: "hub", traffic: "high", level: 2 },
+    { position: [27.7170, 85.3450] as [number, number], label: "Chabahil", type: "hub", traffic: "high", level: 2 },
+    { position: [27.6917, 85.3323] as [number, number], label: "New Baneshwor", type: "hub", traffic: "high", level: 2 },
+    { position: [27.6935, 85.3190] as [number, number], label: "Maitighar", type: "hub", traffic: "high", level: 2 },
+    { position: [27.7055, 85.3150] as [number, number], label: "Ratna Park", type: "hub", traffic: "high", level: 2 },
+    { position: [27.7470, 85.3140] as [number, number], label: "Gongabu", type: "hub", traffic: "critical", level: 2 },
+    
+    // Sub-Hubs & Points of Interest (Level 3 - Visible at zoom > 14)
+    { position: [27.7035, 85.2990] as [number, number], label: "Kalimati", type: "market", traffic: "high", level: 3 },
+    { position: [27.6980, 85.3050] as [number, number], label: "Teku", type: "hub", traffic: "medium", level: 3 },
+    { position: [27.6910, 85.3100] as [number, number], label: "Tripureshwor", type: "hub", traffic: "high", level: 3 },
+    { position: [27.6920, 85.3210] as [number, number], label: "Thapathali", type: "hub", traffic: "critical", level: 3 },
+    { position: [27.7100, 85.3210] as [number, number], label: "Kamalpokhari", type: "hub", traffic: "medium", level: 3 },
+    { position: [27.7220, 85.3180] as [number, number], label: "Lazimpat", type: "hub", traffic: "medium", level: 3 },
+    { position: [27.7080, 85.3150] as [number, number], label: "Jamal", type: "hub", traffic: "high", level: 3 },
+    { position: [27.6880, 85.3400] as [number, number], label: "Shantinagar", type: "sector", traffic: "medium", level: 3 },
+    { position: [27.6950, 85.3480] as [number, number], label: "Sinamangal", type: "sector", traffic: "high", level: 3 },
+    { position: [27.6780, 85.3200] as [number, number], label: "Jawalakhel", type: "hub", traffic: "high", level: 3 },
+    { position: [27.6700, 85.3230] as [number, number], label: "Lagankhel", type: "hub", traffic: "high", level: 3 },
+  ], []);
+
+  // Major Road Network Polylines (Segmented for high-fidelity)
+  const roads = useMemo(() => [
+    // Ring Road Segments
+    { name: "Ring Road SW", path: [[27.6942, 85.2825], [27.6830, 85.3040], [27.6762, 85.3150], [27.6727, 85.3252]] as L.LatLngExpression[], level: "critical" },
+    { name: "Ring Road SE", path: [[27.6727, 85.3252], [27.6762, 85.3496], [27.6970, 85.3563]] as L.LatLngExpression[], level: "high" },
+    { name: "Ring Road NE", path: [[27.6970, 85.3563], [27.7215, 85.3620], [27.7345, 85.3340]] as L.LatLngExpression[], level: "medium" },
+    { name: "Ring Road NW", path: [[27.7345, 85.3340], [27.7470, 85.3140], [27.7350, 85.2950], [27.7149, 85.2903], [27.6942, 85.2825]] as L.LatLngExpression[], level: "high" },
+    
+    // Arterial Arteries
+    { name: "Arniko Hwy", path: [[27.6935, 85.3190], [27.6917, 85.3323], [27.6762, 85.3496], [27.6600, 85.3800]] as L.LatLngExpression[], level: "critical" },
+    { name: "Kantipath", path: [[27.7345, 85.3340], [27.7220, 85.3180], [27.7160, 85.3160], [27.7055, 85.3150], [27.6910, 85.3100]] as L.LatLngExpression[], level: "high" },
+    { name: "Putalisadak", path: [[27.7100, 85.3210], [27.7055, 85.3200], [27.6910, 85.3210]] as L.LatLngExpression[], level: "high" },
+    { name: "Bishnumati Link", path: [[27.7350, 85.2950], [27.7100, 85.2950], [27.6980, 85.3050], [27.6830, 85.3040]] as L.LatLngExpression[], level: "medium" },
+    { name: "Bagmati Corridor", path: [[27.6920, 85.3210], [27.6880, 85.3250], [27.6800, 85.3350]] as L.LatLngExpression[], level: "low" },
+  ], []);
 
   const getTrafficColor = (level: string) => {
     switch (level) {
-      case "low": return "bg-green-500";
-      case "medium": return "bg-yellow-500";
-      case "high": return "bg-red-500";
-      default: return "bg-cyan-500";
+      case "low": return "#10b981"; // emerald-500
+      case "medium": return "#f59e0b"; // amber-500
+      case "high": return "#f43f5e"; // rose-500
+      case "critical": return "#be123c"; // deep-rose
+      default: return "#94a3b8"; // slate-400
     }
   };
 
-  const getAqiColor = (aqi: number) => {
-    if (aqi <= 50) return "rgba(34, 197, 94, 0.3)";
-    if (aqi <= 100) return "rgba(234, 179, 8, 0.3)";
-    if (aqi <= 150) return "rgba(249, 115, 22, 0.3)";
-    return "rgba(239, 68, 68, 0.3)";
+  const getTrafficClass = (level: string) => {
+    switch (level) {
+      case "low": return "traffic-line-animate"; // Slow crawl
+      case "medium": return "traffic-line-slow";
+      case "high": return "traffic-line-animate";
+      case "critical": return "traffic-line-fast"; // Fast crawl
+      default: return "";
+    }
   };
 
-  return (
-    <div className="absolute inset-0 flex items-center justify-center">
-      {/* Main Map Container with Enhanced Depth */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ 
-          opacity: 1, 
-          scale: 1,
-          y: [0, -5, 0]
-        }}
-        transition={{ 
-          duration: 1,
-          y: {
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }
-        }}
-        className="relative w-full h-full"
-        style={{
-          transform: 'perspective(1500px) rotateX(3deg)',
-          filter: 'drop-shadow(0 25px 50px rgba(6, 182, 212, 0.3)) drop-shadow(0 50px 100px rgba(139, 92, 246, 0.2))',
-        }}
-      >
-        {/* Map Background with Enhanced Glow */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-lg overflow-hidden"
+  const getMarkerColor = (level: string) => {
+    switch (level) {
+      case "low": return "bg-emerald-500";
+      case "medium": return "bg-amber-500";
+      case "high": return "bg-rose-500";
+      case "critical": return "bg-rose-700";
+      default: return "bg-blue-500";
+    }
+  };
+
+  const aqiSectors = useMemo(() => landmarks.map(l => ({
+    position: l.position,
+    val: 140 + Math.random() * 40
+  })), [landmarks]);
+
+  // Weather Rain Overlay (Adaptation)
+  const rainOverlay = useMemo(() => (
+    <div className="absolute inset-0 pointer-events-none z-[1000] mix-blend-overlay">
+      {[...Array(30)].map((_, i) => (
+        <motion.div
+          key={`rain-${i}`}
+          className="absolute w-[0.5px] h-8 bg-blue-300/30"
           style={{
-            boxShadow: `
-              0 0 60px rgba(6, 182, 212, 0.4),
-              0 0 120px rgba(139, 92, 246, 0.3),
-              inset 0 0 100px rgba(6, 182, 212, 0.1)
-            `
+            left: `${Math.random() * 100}%`,
+            top: '-10%',
           }}
-        >
-          {/* Animated scanning grid overlay */}
-          <motion.div 
-            className="absolute inset-0 opacity-40"
-            animate={{
-              backgroundPosition: ['0px 0px', '30px 30px']
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "linear"
-            }}
-            style={{
-              backgroundImage: `
-                linear-gradient(rgba(6, 182, 212, 0.3) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(6, 182, 212, 0.3) 1px, transparent 1px)
-              `,
-              backgroundSize: '30px 30px',
-            }}
-          />
+          animate={{ y: ['0vh', '110vh'] }}
+          transition={{
+            duration: 0.6 + Math.random() * 0.4,
+            repeat: Infinity,
+            delay: Math.random() * 2,
+            ease: "linear",
+          }}
+        />
+      ))}
+    </div>
+  ), []);
 
-          {/* Animated Data Point Overlay */}
-          <div className="absolute inset-0">
-            {dataPoints.map((point, i) => (
-              <motion.div
-                key={`data-${i}`}
-                className="absolute w-1 h-1 bg-cyan-400 rounded-full"
-                style={{
-                  left: `${point.x}%`,
-                  top: `${point.y}%`,
-                  boxShadow: '0 0 10px rgba(6, 182, 212, 0.8)'
-                }}
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ 
-                  scale: [0, 1.5, 0],
-                  opacity: [0, 1, 0]
-                }}
-                transition={{
-                  duration: 2,
-                  delay: i * 0.1,
-                  repeat: Infinity
-                }}
-              />
-            ))}
-          </div>
+  return (
+    <div className="absolute inset-0 bg-slate-50 overflow-hidden select-none">
+      <MapContainer 
+        center={center} 
+        zoom={zoom} 
+        zoomControl={false}
+        className="w-full h-full grayscale-[0.2] contrast-[1.1]"
+      >
+        <MapController zoom={zoom} center={center} />
+        
+        {/* Professional Tile Layer - CartoDB Positron */}
+        <TileLayer
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+        />
 
-          {/* Scanning beam effect */}
-          <motion.div
-            className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent"
-            style={{
-              boxShadow: '0 0 20px rgba(6, 182, 212, 0.8)',
-            }}
-            animate={{
-              y: ['0%', '100%']
-            }}
-            transition={{
-              duration: 4,
-              repeat: Infinity,
-              ease: "linear"
+        {/* Traffic Network Layer */}
+        {showTraffic && roads.map((road, i) => (
+          <Polyline 
+            key={i}
+            positions={road.path as L.LatLngExpression[]}
+            className={getTrafficClass(road.level)}
+            pathOptions={{
+              color: getTrafficColor(road.level),
+              weight: 5,
+              lineCap: 'round',
+              lineJoin: 'round',
+              opacity: 0.8
             }}
           />
+        ))}
 
-          {/* AQI Heat Zones with Enhanced Glow */}
-          {showAqi && markers.map((marker, i) => (
-            <motion.div
-              key={`aqi-${i}`}
-              className="absolute rounded-full blur-3xl"
-              style={{
-                left: `${marker.x}%`,
-                top: `${marker.y}%`,
-                width: '200px',
-                height: '200px',
-                background: getAqiColor(marker.aqi),
-                transform: 'translate(-50%, -50%)',
-                boxShadow: `0 0 80px ${getAqiColor(marker.aqi)}`
-              }}
-              animate={{
-                scale: [1, 1.3, 1],
-                opacity: [0.4, 0.7, 0.4],
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                delay: i * 0.5,
-              }}
-            />
-          ))}
+        {/* AQI Heat Overlay */}
+        {showAqi && aqiSectors.map((sector, i) => (
+          <Circle
+            key={i}
+            center={sector.position}
+            radius={800}
+            pathOptions={{
+              fillColor: sector.val > 150 ? '#f43f5e' : '#f59e0b',
+              fillOpacity: 0.15,
+              stroke: false
+            }}
+          />
+        ))}
 
-          {/* Traffic Routes with Enhanced Animation */}
-          {showTraffic && (
-            <>
-              <svg className="absolute inset-0 w-full h-full">
-                {/* Main road routes */}
-                <motion.path
-                  d="M 20,50 Q 40,45 60,48 T 90,50"
-                  stroke="rgba(239, 68, 68, 0.8)"
-                  strokeWidth="5"
-                  fill="none"
-                  initial={{ pathLength: 0 }}
-                  animate={{ pathLength: 1 }}
-                  transition={{ duration: 2 }}
-                  filter="url(#enhanced-glow)"
-                />
-                <motion.path
-                  d="M 50,10 Q 52,30 50,60 T 48,90"
-                  stroke="rgba(234, 179, 8, 0.8)"
-                  strokeWidth="5"
-                  fill="none"
-                  initial={{ pathLength: 0 }}
-                  animate={{ pathLength: 1 }}
-                  transition={{ duration: 2, delay: 0.3 }}
-                  filter="url(#enhanced-glow)"
-                />
-                
-                {/* Animated traffic flow particles */}
-                {[...Array(10)].map((_, i) => (
-                  <motion.circle
-                    key={`traffic-${i}`}
-                    r="3"
-                    fill="rgba(6, 182, 212, 0.8)"
-                    filter="url(#enhanced-glow)"
-                    initial={{ offsetDistance: '0%', opacity: 0 }}
-                    animate={{ 
-                      offsetDistance: '100%',
-                      opacity: [0, 1, 0]
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      delay: i * 0.3,
-                      ease: "linear"
-                    }}
-                    style={{
-                      offsetPath: 'path("M 20,50 Q 40,45 60,48 T 90,50")',
-                    }}
-                  >
-                    <animateMotion
-                      dur="3s"
-                      repeatCount="indefinite"
-                      begin={`${i * 0.3}s`}
-                    >
-                      <mpath href="#path1"/>
-                    </animateMotion>
-                  </motion.circle>
-                ))}
-                
-                <defs>
-                  <path id="path1" d="M 20,50 Q 40,45 60,48 T 90,50" />
-                  <filter id="enhanced-glow">
-                    <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
-                    <feMerge>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
-                    </feMerge>
-                  </filter>
-                </defs>
-              </svg>
-            </>
-          )}
-
-          {/* Location Markers */}
-          {markers.map((marker, i) => (
-            <motion.div
-              key={`marker-${i}`}
-              className="absolute"
-              style={{
-                left: `${marker.x}%`,
-                top: `${marker.y}%`,
-                transform: 'translate(-50%, -50%)',
-              }}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5, delay: i * 0.2 }}
-              whileHover={{ scale: 1.2 }}
-            >
-              {/* Pulsing circle */}
-              <motion.div
-                className={`w-4 h-4 rounded-full ${showTraffic ? getTrafficColor(marker.traffic) : 'bg-cyan-500'}`}
-                animate={{
-                  boxShadow: [
-                    `0 0 0 0 ${showTraffic && marker.traffic === 'high' ? 'rgba(239, 68, 68, 0.7)' : 'rgba(6, 182, 212, 0.7)'}`,
-                    `0 0 0 20px rgba(6, 182, 212, 0)`,
-                  ],
-                }}
-                transition={{ duration: 2, repeat: Infinity }}
-              />
-              
-              {/* Label */}
-              <motion.div
-                className="absolute top-6 left-1/2 -translate-x-1/2 whitespace-nowrap"
-                initial={{ opacity: 0 }}
-                whileHover={{ opacity: 1 }}
-              >
-                <div className="glass-panel px-3 py-1 text-xs text-cyan-300">
-                  {marker.label}
-                </div>
-              </motion.div>
-            </motion.div>
-          ))}
-
-          {/* Dynamic Incidents */}
-          {incidents.map((incident) => (
-            <motion.div
-              key={incident.id}
-              className="absolute"
-              style={{
-                left: `${incident.x}%`,
-                top: `${incident.y}%`,
-                transform: 'translate(-50%, -50%)',
-                zIndex: 40,
-              }}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-            >
-              <div className="relative">
-                <motion.div
-                  className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center text-white"
-                  animate={{
-                    boxShadow: [
-                      "0 0 0 0 rgba(239, 68, 68, 0.7)",
-                      "0 0 0 30px rgba(239, 68, 68, 0)",
-                    ],
-                    scale: [1, 1.2, 1]
-                  }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                >
-                  <AlertTriangle className="w-4 h-4" />
-                </motion.div>
-                
-                <div className="absolute top-8 left-1/2 -translate-x-1/2 whitespace-nowrap z-50">
-                  <div className="bg-red-600/90 backdrop-blur-md px-3 py-1 text-[10px] font-bold text-white rounded-lg border border-red-400/50 shadow-xl">
-                    ALRT: {incident.label}
-                  </div>
-                </div>
+        {/* Landmark Markers (with Zoom-based Filtering) */}
+        {landmarks
+          .filter(l => {
+            if (l.level === 1) return true;
+            if (l.level === 2 && zoom >= 13) return true;
+            if (l.level === 3 && zoom >= 15) return true;
+            return false;
+          })
+          .map((l, i) => (
+          <Marker 
+            key={i} 
+            position={l.position}
+            icon={L.divIcon({
+              className: 'custom-marker',
+              html: `<div class="flex flex-col items-center group cursor-pointer translate-y-[-50%]">
+                <div class="w-3 h-3 rounded-full border-2 border-white shadow-md transition-all group-hover:scale-150 ${showTraffic ? getMarkerColor(l.traffic) : 'bg-slate-400'}"></div>
+                ${zoom >= 14 || l.level === 1 ? `<div class="mt-1 bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded-md shadow-sm border border-slate-200 text-[10px] font-bold text-slate-700 whitespace-nowrap opacity-100 transition-all">${l.label}</div>` : ''}
+              </div>`,
+              iconSize: [20, 20],
+              iconAnchor: [10, 10]
+            })}
+          >
+            <Popup className="custom-popup">
+              <div className="p-2">
+                <h3 className="text-xs font-bold text-slate-800">{l.label}</h3>
+                <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-wider">{l.type} - {l.traffic} traffic</p>
               </div>
-            </motion.div>
+            </Popup>
+          </Marker>
+        ))}
+
+        {/* Dynamic Incidents */}
+        {incidents.map((incident) => (
+          <Marker
+            key={incident.id}
+            position={landmarks[Math.floor(Math.random() * landmarks.length)].position} // Simulated geographic snapping
+            icon={L.divIcon({
+              className: 'incident-marker',
+              html: `<div class="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center animate-bounce border border-rose-500/30">
+                <div class="w-5 h-5 rounded-full bg-rose-500 flex items-center justify-center text-white shadow-lg">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 9v4m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 17c-.77 1.333.192 3 1.732 3z"/></svg>
+                </div>
+              </div>`,
+              iconSize: [32, 32],
+              iconAnchor: [16, 16]
+            })}
+          />
+        ))}
+      </MapContainer>
+
+      {/* Weather Overlay Overlay */}
+      {showWeather && rainOverlay}
+
+      {/* Floating Control Hub */}
+      <div className="absolute top-6 right-6 flex flex-col gap-3 z-[1000]">
+        <div className="bg-white/90 backdrop-blur-md border border-slate-200 rounded-2xl p-1.5 shadow-xl flex flex-col gap-1.5">
+          {[
+            { icon: ZoomIn, onClick: () => setZoom(z => Math.min(z + 1, 18)), label: "Zoom In" },
+            { icon: ZoomOut, onClick: () => setZoom(z => Math.max(z - 1, 8)), label: "Zoom Out" },
+            { icon: Navigation, onClick: () => setCenter([27.7172, 85.3240]), label: "Center Map" },
+            { icon: Maximize2, label: "Full View" },
+          ].map((btn, i) => (
+            <button
+              key={i}
+              onClick={btn.onClick}
+              title={btn.label}
+              className="w-10 h-10 bg-white hover:bg-slate-50 border border-transparent hover:border-slate-100 rounded-xl flex items-center justify-center text-slate-600 transition-all active:scale-95 shadow-sm"
+            >
+              <btn.icon className="w-5 h-5" />
+            </button>
           ))}
-
-          {/* Weather particles */}
-          {showWeather && (
-            <div className="absolute inset-0">
-              {[...Array(30)].map((_, i) => (
-                <motion.div
-                  key={`rain-${i}`}
-                  className="absolute w-0.5 h-4 bg-gradient-to-b from-cyan-400/60 to-transparent"
-                  style={{
-                    left: `${Math.random() * 100}%`,
-                    top: `${-10}%`,
-                  }}
-                  animate={{
-                    y: ['0vh', '110vh'],
-                  }}
-                  transition={{
-                    duration: 1 + Math.random() * 0.5,
-                    repeat: Infinity,
-                    delay: Math.random() * 2,
-                    ease: "linear",
-                  }}
-                />
-              ))}
-            </div>
-          )}
         </div>
-
-        {/* Map Controls */}
-        <div className="absolute top-4 right-4 flex flex-col gap-2">
-          <motion.button
-            className="glass-panel p-3 hover:bg-cyan-500/20 transition-colors"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setZoom(z => Math.min(z + 1, 18))}
-          >
-            <ZoomIn className="w-5 h-5 text-cyan-400" />
-          </motion.button>
-          <motion.button
-            className="glass-panel p-3 hover:bg-cyan-500/20 transition-colors"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setZoom(z => Math.max(z - 1, 8))}
-          >
-            <ZoomOut className="w-5 h-5 text-cyan-400" />
-          </motion.button>
-          <motion.button
-            className="glass-panel p-3 hover:bg-cyan-500/20 transition-colors"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Maximize2 className="w-5 h-5 text-cyan-400" />
-          </motion.button>
-          <motion.button
-            className="glass-panel p-3 hover:bg-cyan-500/20 transition-colors"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <Navigation className="w-5 h-5 text-cyan-400" />
-          </motion.button>
+        
+        {/* Zoom Level Chip */}
+        <div className="bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-full shadow-lg self-end">
+          <div className="text-[10px] text-slate-300 uppercase font-black tracking-[0.2em]">L-{zoom}</div>
         </div>
-
-        {/* Zoom level indicator */}
-        <div className="absolute bottom-4 right-4 glass-panel px-4 py-2">
-          <div className="text-xs text-cyan-300/70 uppercase tracking-wider">Zoom Level</div>
-          <div className="text-xl font-bold text-white font-mono">{zoom}</div>
-        </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

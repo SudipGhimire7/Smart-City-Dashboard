@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
+import { motion } from "motion/react";
 import { StatusBar } from "./components/StatusBar";
 import { MapPanel } from "./components/MapPanel";
 import { AlertsPanel } from "./components/AlertsPanel";
 import { AnalyticsPanel } from "./components/AnalyticsPanel";
 import { NewsFeed } from "./components/NewsFeed";
-import { HUDOverlay } from "./components/HUDOverlay";
 import { Layout } from "./components/Layout";
 import { AISystemAssistant } from "./components/AISystemAssistant";
 import { SustainabilityPanel } from "./components/SustainabilityPanel";
@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { Zap, Shield, Globe, Power } from "lucide-react";
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState("map");
   const [showTraffic, setShowTraffic] = useState(true);
   const [showAqi, setShowAqi] = useState(true);
   const [showWeather, setShowWeather] = useState(false);
@@ -35,30 +36,103 @@ export default function App() {
     setIncidents(prev => [...prev.slice(-4), newIncident]); // Keep last 5 incidents
   };
 
-  // Crisis Mode Effect
+  const renderContent = () => {
+    switch (activeTab) {
+      case "map":
+        return (
+          <div className="space-y-6">
+            <div className="h-[calc(100vh-280px)] lg:h-[700px] rounded-3xl overflow-hidden bg-card border border-border relative group shadow-sm bg-white">
+              <MapPanel 
+                showTraffic={showTraffic}
+                showAqi={showAqi}
+                showWeather={showWeather}
+                incidents={incidents}
+              />
+              <div className="absolute bottom-6 left-6 flex flex-wrap gap-2">
+                {[
+                  { label: "Traffic", active: showTraffic, set: setShowTraffic },
+                  { label: "Air Quality", active: showAqi, set: setShowAqi },
+                  { label: "Weather", active: showWeather, set: setShowWeather },
+                ].map((ctrl) => (
+                  <button
+                    key={ctrl.label}
+                    onClick={() => ctrl.set(!ctrl.active)}
+                    className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border shadow-sm ${
+                      ctrl.active 
+                        ? "bg-blue-600 text-white border-blue-700" 
+                        : "bg-white/95 backdrop-blur-sm text-slate-600 border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    {ctrl.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { label: "System Uptime", value: "99.98%", icon: Zap, color: "text-blue-600" },
+                { label: "Network Security", value: "Protected", icon: Shield, color: "text-indigo-600" },
+                { label: "Response Time", value: "0.8ms", icon: Globe, color: "text-cyan-600" },
+                { label: "System Status", value: isCrisisMode ? "EMERGENCY" : "OPTIMAL", icon: Power, color: isCrisisMode ? "text-rose-500" : "text-emerald-500", action: () => setIsCrisisMode(!isCrisisMode) },
+              ].map((metric) => (
+                <button 
+                  key={metric.label} 
+                  onClick={metric.action}
+                  disabled={!metric.action}
+                  className="bg-white p-5 flex items-center gap-5 border border-border rounded-2xl shadow-sm hover:border-blue-200 hover:bg-slate-50 transition-all text-left group"
+                >
+                  <div className={`w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center ${metric.color} border border-slate-100 shadow-sm group-hover:scale-105 transition-transform`}>
+                    <metric.icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-slate-400 uppercase tracking-widest font-bold mb-1">{metric.label}</div>
+                    <div className="text-sm lg:text-md font-bold text-slate-800">{metric.value}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      case "alerts":
+        return <div className="bg-white rounded-3xl border border-border h-[calc(100vh-180px)] overflow-hidden"><AlertsPanel /></div>;
+      case "analytics":
+        return <div className="bg-white rounded-3xl border border-border h-[calc(100vh-180px)] overflow-hidden"><AnalyticsPanel /></div>;
+      case "news":
+        return <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-180px)]">
+          <NewsFeed />
+          <SustainabilityPanel />
+        </div>;
+      case "ai":
+        return <div className="bg-white rounded-3xl border border-border h-[calc(100vh-180px)] overflow-hidden"><AISystemAssistant onReportIncident={handleReportIncident} /></div>;
+      default:
+        return <div className="h-[calc(100vh-180px)] flex items-center justify-center text-slate-400">Settings Section Coming Soon</div>;
+    }
+  };
+
+  // Emergency Mode Effect
   useEffect(() => {
     document.documentElement.setAttribute("data-crisis", isCrisisMode.toString());
     if (isCrisisMode) {
-      toast.warning("EMERGENCY PROTOCOL ACTIVATED", {
-        description: "City systems shifting to high-priority alert status.",
+      toast.warning("EMERGENCY OVERRIDE ACTIVATED", {
+        description: "Prioritizing emergency response protocols across city infrastructure.",
         duration: 10000,
       });
     } else {
       toast.info("System Status: Normal", {
-        description: "Crisis protocols deactivated.",
+        description: "Dashboard returned to standard monitoring mode.",
       });
     }
   }, [isCrisisMode]);
 
-  // Simulate data updates and notifications
+  // Data simulation
   useEffect(() => {
     const interval = setInterval(() => {
       setTemperature(prev => prev + (Math.random() - 0.5) * 2);
       setAqi(prev => {
         const next = Math.max(50, Math.min(200, prev + (Math.random() - 0.5) * 10));
         if (next > 180 && prev <= 180) {
-          toast.error("Critical AQI level detected in Sector 7", {
-            description: "Neural systems recommending air filtration activation."
+          toast.error("Unhealthy AQI detected in Sector 7", {
+            description: "Advising deployment of local filtration measures."
           });
         }
         return next;
@@ -67,7 +141,7 @@ export default function App() {
       const levels = ["Low", "Medium", "High"];
       const nextTraffic = isCrisisMode ? "Critical" : levels[Math.floor(Math.random() * levels.length)];
       if (nextTraffic !== trafficLevel && (nextTraffic === "High" || nextTraffic === "Critical")) {
-        toast.warning(isCrisisMode ? "CRITICAL CONGESTION" : "Traffic congestion rising on Main Arterial Road");
+        toast.warning(isCrisisMode ? "CRITICAL CONGESTION" : "Increasing traffic density on Central Arterial Road");
       }
       setTrafficLevel(nextTraffic);
     }, 8000);
@@ -76,101 +150,30 @@ export default function App() {
   }, [trafficLevel, isCrisisMode]);
 
   return (
-    <Layout isCrisisMode={isCrisisMode} setIsCrisisMode={setIsCrisisMode}>
-      <HUDOverlay />
-      <Toaster position="top-right" closeButton richColors theme="dark" />
+    <Layout 
+      isCrisisMode={isCrisisMode} 
+      setIsCrisisMode={setIsCrisisMode} 
+      activeTab={activeTab} 
+      setActiveTab={setActiveTab}
+    >
+      <Toaster position="top-right" closeButton richColors theme="light" />
       
       <main className="relative z-10 w-full max-w-[1700px] mx-auto">
         <div className="p-4 lg:p-8 space-y-8 pb-24 lg:pb-8">
-          {/* Top Status Overview */}
           <StatusBar 
             temperature={Math.round(temperature)} 
             aqi={Math.round(aqi)} 
             trafficLevel={trafficLevel}
           />
 
-          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-            {/* Left Column - Map and Main Feed (3/4 on XL) */}
-            <div className="xl:col-span-3 space-y-6">
-              <div className="h-[500px] lg:h-[650px] rounded-3xl overflow-hidden glass-panel relative group border border-white/5">
-                <MapPanel 
-                  showTraffic={showTraffic}
-                  showAqi={showAqi}
-                  showWeather={showWeather}
-                  incidents={incidents}
-                />
-                
-                {/* Floating Map Controls */}
-                <div className="absolute bottom-6 left-6 flex flex-wrap gap-3">
-                  {[
-                    { label: "Traffic", active: showTraffic, set: setShowTraffic },
-                    { label: "Air Quality", active: showAqi, set: setShowAqi },
-                    { label: "Weather", active: showWeather, set: setShowWeather },
-                  ].map((ctrl) => (
-                    <button
-                      key={ctrl.label}
-                      onClick={() => ctrl.set(!ctrl.active)}
-                      className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border ${
-                        ctrl.active 
-                          ? "bg-cyan-500 text-white border-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.4)]" 
-                          : "bg-slate-900/80 text-slate-400 border-white/10 hover:border-white/20"
-                      }`}
-                    >
-                      {ctrl.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Secondary Feed Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="glass-panel p-6 min-h-[400px] border border-white/5">
-                  <NewsFeed />
-                </div>
-                <div className="glass-panel p-6 min-h-[400px] border border-white/5">
-                  <SustainabilityPanel />
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column - Intelligence & Systems (1/4 on XL) */}
-            <div className="xl:col-span-1 space-y-6">
-              <div className="glass-panel p-6 min-h-[450px] border border-white/5">
-                <AISystemAssistant onReportIncident={handleReportIncident} />
-              </div>
-              <div className="glass-panel p-6 min-h-[450px] border border-white/5">
-                <AlertsPanel />
-              </div>
-              <div className="glass-panel p-6 min-h-[450px] border border-white/5">
-                <AnalyticsPanel />
-              </div>
-            </div>
-          </div>
-
-          {/* Infrastructure Metrics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { label: "Grid Stability", value: "99.2%", icon: Zap, color: "text-cyan-400" },
-              { label: "Security Status", value: "Optimal", icon: Shield, color: "text-blue-400" },
-              { label: "Global Sync", value: "1.2ms", icon: Globe, color: "text-purple-400" },
-              { label: "System Priority", value: isCrisisMode ? "EMERGENCY" : "OPTIMAL", icon: Power, color: isCrisisMode ? "text-red-500" : "text-green-500", action: () => setIsCrisisMode(!isCrisisMode) },
-            ].map((metric) => (
-              <button 
-                key={metric.label} 
-                onClick={metric.action}
-                disabled={!metric.action}
-                className={`glass-panel p-6 flex items-center gap-6 border border-white/5 hover:bg-white/5 transition-colors text-left ${metric.action ? "cursor-pointer" : "cursor-default animate-pulse-soft"}`}
-              >
-                <div className={`w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center ${metric.color} border border-white/5 shadow-inner`}>
-                  <metric.icon className="w-6 h-6" />
-                </div>
-                <div>
-                  <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">{metric.label}</div>
-                  <div className="text-xl font-bold text-white font-mono">{metric.value}</div>
-                </div>
-              </button>
-            ))}
-          </div>
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {renderContent()}
+          </motion.div>
         </div>
       </main>
     </Layout>
